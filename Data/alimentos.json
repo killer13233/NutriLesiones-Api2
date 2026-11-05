@@ -1023,8 +1023,7 @@
    "Cena"
   ],
   "foto": "imagenes/ref-sardinas-en-aceite-enlatadas.jpg",
-  "nota": null,
-  "fotoReferencia": "Foto de referencia del libro USFQ: Sardina enlatada, en salsa de tomate. No es exactamente este alimento."
+  "nota": null
  },
  {
   "id": "sardina-en-salsa-de-tomate-enlatada",
@@ -1172,7 +1171,7 @@
   "foto": "imagenes/res-molida-3-5-de-grasa.jpg",
   "nota": null
  },
- {
+  {
   "id": "pescado-atun-en-agua-o-aceite-enlatado",
   "grupo": "Carnes, pescados y huevos",
   "subgrupo": "Bajos en grasas",
@@ -1186,9 +1185,8 @@
    "MT",
    "Cena"
   ],
-  "foto": "imagenes/ref-pescado-atun-en-agua-o-aceite-enlatado.jpg",
-  "nota": null,
-  "fotoReferencia": "Foto de referencia del libro USFQ: Pescado, albacora (atún blanco), cocido. No es exactamente este alimento."
+  "foto": "imagenes/pescado-atun-en-agua-o-aceite-enlatado.jpg",
+  "nota": null
  },
  {
   "id": "pescado-tilapia",
