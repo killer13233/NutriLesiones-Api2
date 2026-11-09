@@ -33,10 +33,20 @@ public sealed class MenuService
         // Las dos carnes se reparten juntas para que cada comida lleve una sola fuente proteica (ver DistribuidorService).
         var carnesBajas = grupos.First(g => g.Grupo == GrupoCarnes && g.Subgrupo == "Bajos en grasas");
         var carnesMedias = grupos.First(g => g.Grupo == GrupoCarnes && g.Subgrupo == "Medios en grasas");
-        var (repBajas, repMedias) = DistribuidorService.DistribuirCarnes(carnesBajas, carnesMedias, _catalogo, rng);
-        var reparto = grupos.ToDictionary(g => g, g =>
-            g == carnesBajas ? repBajas : g == carnesMedias ? repMedias : DistribuidorService.Distribuir(g, _catalogo, rng));
-        AsegurarBaseDesayuno(reparto);
+
+        // El sorteo de comidas se repite (hasta 40 veces) si deja una comida muy cargada o muy liviana en kcal.
+        var reparto = new Dictionary<GrupoIntercambio, double[]>();
+        var mejorDesbalance = double.MaxValue;
+        for (var intento = 0; intento < 40; intento++)
+        {
+            var (repBajas, repMedias) = DistribuidorService.DistribuirCarnes(carnesBajas, carnesMedias, _catalogo, rng);
+            var candidato = grupos.ToDictionary(g => g, g =>
+                g == carnesBajas ? repBajas : g == carnesMedias ? repMedias : DistribuidorService.Distribuir(g, _catalogo, rng));
+            AsegurarBaseDesayuno(candidato);
+            var desbalance = DesbalanceKcal(grupos, candidato);
+            if (desbalance < mejorDesbalance) { mejorDesbalance = desbalance; reparto = candidato; }
+            if (desbalance <= DesbalanceMaximo) break;
+        }
         var usados = new Dictionary<string, int>(); // cuántas veces se usó cada alimento en el día
         var usadasFamilias = new Dictionary<string, int>(); // cuántas veces se usó cada fuente proteica (pollo, res, pescado, huevo...)
         var advertencias = new List<string>();
@@ -66,6 +76,12 @@ public sealed class MenuService
                     if (deLaFamilia.Count > 0) pool = deLaFamilia;
                 }
                 if (pool.Count == 0) continue;
+                // la mermelada solo va si la comida lleva pan; si no, miel, panela o azúcar
+                if (g.Grupo == GruposIntercambio.Azucares && !items.Any(i => i.a.Grupo == "Cereales" && Texto.Norm(i.a.Nombre).StartsWith("pan")))
+                {
+                    var sinMermelada = pool.Where(a => !Texto.Norm(a.Nombre).Contains("mermelada")).ToList();
+                    if (sinMermelada.Count > 0) pool = sinMermelada;
+                }
 
                 // Un solo alimento por subgrupo y comida: si corresponden 2 intercambios, se muestra 1 alimento con la cantidad total.
                 // Única excepción: 2 o más intercambios de verduras pueden ser 2 verduras (ensalada).
@@ -142,6 +158,23 @@ public sealed class MenuService
             for (var m = 1; m < 5; m++) r[m] = 0;
             return;
         }
+    }
+
+    // Reparto ideal de las kcal del día (Desayuno, Media mañana, Almuerzo, Media tarde, Cena) y desvío máximo aceptado por comida.
+    static readonly double[] KcalIdealPorComida = { 0.20, 0.14, 0.31, 0.14, 0.21 };
+    const double DesbalanceMaximo = 0.08;
+
+    /// <summary>Mayor desvío (en fracción del día) entre lo que lleva una comida y lo ideal; 0 = reparto perfecto.</summary>
+    static double DesbalanceKcal(List<GrupoIntercambio> grupos, Dictionary<GrupoIntercambio, double[]> reparto)
+    {
+        var kcal = new double[5];
+        foreach (var g in grupos)
+            for (var m = 0; m < 5; m++) kcal[m] += g.Kcal * reparto[g][m];
+        var total = kcal.Sum();
+        if (total <= 0) return 0;
+        var peor = 0.0;
+        for (var m = 0; m < 5; m++) peor = Math.Max(peor, Math.Abs(kcal[m] / total - KcalIdealPorComida[m]));
+        return peor;
     }
 
     /// <summary>Cuántos alimentos distintos se muestran para un subgrupo en una comida (1, salvo 2 verduras cuando hay 2 o más intercambios).</summary>

@@ -128,3 +128,4 @@ Casi todas las fotos salen del libro de la USFQ. Para poner o cambiar una foto: 
 - Pesos por comida ajustados en `Models/Modelos.cs`: verduras solo almuerzo y cena; cereales medios bajos en grasa 60 % desayuno / 40 % media tarde.
 - `POST /api/plan` acepta `edad` opcional; si viene, debe estar entre 12 y 19 (no cambia el cálculo).
 - `docs/ejemplo-respuesta.json` quedó del formato anterior: regenerarlo con una llamada a /api/plan.
+- El sorteo de comidas se repite (hasta 40 veces) si una comida queda a más de 8 puntos de su parte ideal de las kcal del día (20/14/31/14/21 %). La mermelada solo sale en comidas con pan.
