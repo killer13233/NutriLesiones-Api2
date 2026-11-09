@@ -53,7 +53,8 @@ public sealed class MenuService
             // una sola fuente proteica por comida (no pollo + res en el mismo plato)
             var familiaProteica = ElegirFamiliaProteica(
                 listaGrupos.Where(g => g.Grupo == GrupoCarnes).ToList(), m, usadasFamilias, rng,
-                listaGrupos.Any(g => g.Grupo == "Lácteos"));
+                listaGrupos.Any(g => g.Grupo == "Lácteos"),
+                listaGrupos.Any(g => g.Grupo == "Grasas y frutos secos" && g.Subgrupo == "Altos en grasas"));
 
             foreach (var g in listaGrupos)
             {
@@ -155,7 +156,7 @@ public sealed class MenuService
     /// Elige la fuente proteica de la comida (pollo, res, pescado, huevo...) entre las que tienen opciones
     /// en TODOS los subgrupos de carnes que tocan en esa comida; prefiere las menos usadas en el día.
     /// </summary>
-    string? ElegirFamiliaProteica(List<GrupoIntercambio> gruposCarne, int comida, Dictionary<string, int> usadas, Random rng, bool hayLacteo)
+    string? ElegirFamiliaProteica(List<GrupoIntercambio> gruposCarne, int comida, Dictionary<string, int> usadas, Random rng, bool hayLacteo, bool hayAceite)
     {
         if (gruposCarne.Count == 0) return null;
         HashSet<string>? comunes = null;
@@ -176,6 +177,8 @@ public sealed class MenuService
         if (hayLacteo)
             foreach (var f in new[] { "pescado", "sardinas", "sardina", "camaron" })
                 if (comunes.Count > 1) comunes.Remove(f);
+        // si la comida lleva aceite o frutos secos como grasa, no se usan sardinas en aceite (doble aceite)
+        if (hayAceite && comunes.Count > 1) comunes.Remove("sardinas");
         // el desayuno lleva huevo (entero o clara), no pescado
         if (comida == 0 && comunes.Count > 1) comunes.Remove("pescado");
         var elegida = comunes.OrderBy(f => usadas.GetValueOrDefault(f)).ThenBy(_ => rng.Next()).First();
