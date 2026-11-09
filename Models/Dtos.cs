@@ -1,6 +1,7 @@
 namespace NutriLesiones.Api.Models;
 
-public sealed record PlanRequest(double Peso, string? Fase, string? Leccion, int? Semilla);
+/// <summary>"Edad" es opcional y no cambia el cálculo; si viene, debe estar entre 12 y 19 años.</summary>
+public sealed record PlanRequest(double Peso, string? Fase, string? Leccion, int? Semilla, int? Edad = null);
 
 public sealed record MacrosDto(double Kcal, double Cho, double Proteina, double Grasa);
 
@@ -19,7 +20,8 @@ public sealed record AlimentoMenuDto(string Id, string Nombre, string Grupo, str
     double Porciones, string MedidaPorPorcion, string PesoPorPorcionG, string? Foto, string? FotoReferencia, string? Nota,
     List<AlternativaDto> Alternativas);
 
-public sealed record ComidaDto(string Id, string Nombre, string Horario, List<AlimentoMenuDto> Alimentos, MacrosDto Aporte);
+/// <summary>"Indicacion" sugiere cómo combinar los alimentos de la comida en un plato (texto breve, no es una receta).</summary>
+public sealed record ComidaDto(string Id, string Nombre, string Horario, List<AlimentoMenuDto> Alimentos, MacrosDto Aporte, string? Indicacion = null);
 
 public sealed record PlanResponse(
     string Fase, string? Leccion, double Peso, int Semilla,
@@ -28,4 +30,5 @@ public sealed record PlanResponse(
     AdecuacionDto Adecuacion,
     List<ComidaDto> Comidas,
     MacrosDto TotalDia,
-    List<string> Advertencias);
+    List<string> Advertencias,
+    string GuiaPorciones = "");

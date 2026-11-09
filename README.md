@@ -117,3 +117,14 @@ Casi todas las fotos salen del libro de la USFQ. Para poner o cambiar una foto: 
 - Más de 2600 kcal: el rango DASH se mantiene fijo desde 2600 kcal (decisión de la tutora).
 - Pechuga de pollo: peso 40 g sin confirmar si es crudo o cocido (el catálogo lo marca con una nota).
 - Las porciones fijas (aguacate, cereales medios, frutas bajas) son parámetros por confirmar con el nutricionista.
+
+## Cambios de noviembre (sugerencias de Belén)
+- `comidas[].indicacion`: texto breve con cómo combinar los alimentos de cada comida en un plato (`IndicacionService.cs`).
+- `guiaPorciones`: texto para "Cómo funciona" / inicio de "Comidas del día" (constante `MenuService.GuiaPorciones`).
+- Un solo alimento por subgrupo y comida (2 intercambios = 1 alimento con cantidad 2). Excepción: 2 o más intercambios de verduras pueden mostrarse como 2 verduras.
+- Cada comida lleva una sola fuente de carne (ya no sale trucha + salmón). Los totales por subgrupo no cambian.
+- Las porciones de cada subgrupo se concentran en pocas comidas (máximo tantas como porciones enteras). Cuáles comidas se sortea según los pesos y la `semilla`, así cada plan generado sale distinto.
+- `Data/reglas.json`: reglas blandas (huevo entero con clara; pescado y mariscos con leche o yogur), pendientes de confirmar con Belén.
+- Pesos por comida ajustados en `Models/Modelos.cs`: verduras solo almuerzo y cena; cereales medios bajos en grasa 60 % desayuno / 40 % media tarde.
+- `POST /api/plan` acepta `edad` opcional; si viene, debe estar entre 12 y 19 (no cambia el cálculo).
+- `docs/ejemplo-respuesta.json` quedó del formato anterior: regenerarlo con una llamada a /api/plan.

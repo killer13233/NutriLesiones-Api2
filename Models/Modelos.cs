@@ -55,7 +55,7 @@ public static class GruposIntercambio
                 Cho = 30, Prot = 4, Grasa = 1, Kcal = 150, PesosComida = new[] { 0.30, 0.10, 0.40, 0.05, 0.15 } },
         // Valores por porción tomados del libro USFQ (p. 10). Ojo: en el Excel del nutricionista estos dos están cruzados.
         new() { Grupo = "Cereales", Subgrupo = "Medios en CHO y bajos en grasas",   // pan de rodaja, tortilla...: desayuno y media tarde
-                Cho = 20, Prot = 3, Grasa = 1, Kcal = 105, PesosComida = new[] { 0.20, 0, 0, 0.80, 0 } },
+                Cho = 20, Prot = 3, Grasa = 1, Kcal = 105, PesosComida = new[] { 0.60, 0, 0, 0.40, 0 } },
         new() { Grupo = "Cereales", Subgrupo = "Medios en CHO y medios en grasas",  // chulpi, tostado, canguil: media mañana
                 Cho = 20, Prot = 2, Grasa = 6, Kcal = 145, PesosComida = new[] { 0, 1.0, 0, 0, 0 } },
         new() { Grupo = "Leguminosas", Subgrupo = "Leguminosas",
@@ -65,7 +65,7 @@ public static class GruposIntercambio
         new() { Grupo = "Lácteos", Subgrupo = "Descremados (bajos en grasas)",     // así cada comida lleva un solo lácteo
                 Cho = 12, Prot = 8, Grasa = 1, Kcal = 90, PesosComida = new[] { 0, 1.0, 0, 0, 0 } },
         new() { Grupo = "Vegetales", Subgrupo = "Bajos en CHO",
-                Cho = 5, Prot = 1, Grasa = 0, Kcal = 30, PesosComida = new[] { 0.05, 0.10, 0.40, 0.10, 0.35 } },
+                Cho = 5, Prot = 1, Grasa = 0, Kcal = 30, PesosComida = new[] { 0, 0, 0.55, 0, 0.45 } },   // verduras: almuerzo y cena
         new() { Grupo = "Frutas", Subgrupo = "Medias en CHO",
                 Cho = 20, Prot = 1, Grasa = 0, Kcal = 90, PesosComida = new[] { 0.25, 0.20, 0.20, 0.20, 0.15 } },
         new() { Grupo = "Frutas", Subgrupo = "Bajas en CHO",

@@ -1,4 +1,12 @@
 {
-  "_nota": "Reglas de compatibilidad entre alimentos de una misma comida. Hoy esta vacia: el nutricionista confirmo que leche/yogur con huevo SI se permite. Para agregar una regla blanda: { \"a\": \"texto\", \"b\": \"texto\" } (se busca dentro del nombre del alimento).",
-  "incompatibles": []
+  "_nota": "Reglas blandas de compatibilidad entre alimentos de una misma comida (se evitan si hay otra opcion; si no, el plan lo avisa). Leche/yogur con huevo SI se permite (confirmado por el nutricionista). Pescado/mariscos con lacteos y huevo entero con clara estan PENDIENTES de confirmar con Belen. Formato: { \"a\": \"texto\", \"b\": \"texto\" } (se busca dentro del nombre del alimento).",
+  "incompatibles": [
+    { "a": "huevo de gallina, entero", "b": "huevo de gallina, clara" },
+    { "a": "pescado", "b": "leche" },
+    { "a": "pescado", "b": "yogur" },
+    { "a": "sardina", "b": "leche" },
+    { "a": "sardina", "b": "yogur" },
+    { "a": "camaron", "b": "leche" },
+    { "a": "camaron", "b": "yogur" }
+  ]
 }

@@ -57,6 +57,8 @@ app.MapPost("/api/plan", (PlanRequest req, MenuService menu) =>
 {
     if (req.Peso < 25 || req.Peso > 150)
         return Results.BadRequest(new { error = "El peso debe estar entre 25 y 150 kg." });
+    if (req.Edad is { } edad && (edad < 12 || edad > 19))
+        return Results.BadRequest(new { error = "La edad debe estar entre 12 y 19 años." });
     var fase = RequerimientosService.ParsearFase(req.Fase);
     if (fase == null)
         return Results.BadRequest(new { error = "Fase no válida. Usa: inflamatoria, proliferativa o remodelacion." });

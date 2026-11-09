@@ -12,6 +12,13 @@ public sealed class MenuService
     const string GrupoCarnes = "Carnes, pescados y huevos";
     static readonly string[] OrdenGrupos = { "Lácteos", "Cereales", "Carnes, pescados y huevos", "Leguminosas", "Vegetales", "Frutas", "Grasas y frutos secos", GruposIntercambio.Azucares };
 
+    /// <summary>Texto breve para explicar cómo leer las cantidades (se muestra al inicio de "Comidas del día").</summary>
+    public const string GuiaPorciones =
+        "Cada tiempo de comida muestra los alimentos y las cantidades que te corresponden, expresadas en intercambios: " +
+        "1 intercambio equivale a la medida casera indicada y 2 intercambios, al doble. " +
+        "Puedes cambiar un alimento por cualquiera de sus alternativas: son equivalentes y se usan con la misma cantidad de intercambios, " +
+        "siempre dentro del mismo grupo. No cambies un grupo por otro (por ejemplo, un cereal por una fruta).";
+
     readonly CatalogoService _catalogo;
     public MenuService(CatalogoService catalogo) => _catalogo = catalogo;
 
@@ -22,8 +29,14 @@ public sealed class MenuService
         var ad = PorcionesService.Adecuaciones(grupos, req);
         var enRango = ad.All(a => a >= 90 && a <= 110);
 
-        var reparto = grupos.ToDictionary(g => g, g => DistribuidorService.Distribuir(g, _catalogo));
         var rng = new Random(semilla);
+        // Las dos carnes se reparten juntas para que cada comida lleve una sola fuente proteica (ver DistribuidorService).
+        var carnesBajas = grupos.First(g => g.Grupo == GrupoCarnes && g.Subgrupo == "Bajos en grasas");
+        var carnesMedias = grupos.First(g => g.Grupo == GrupoCarnes && g.Subgrupo == "Medios en grasas");
+        var (repBajas, repMedias) = DistribuidorService.DistribuirCarnes(carnesBajas, carnesMedias, _catalogo, rng);
+        var reparto = grupos.ToDictionary(g => g, g =>
+            g == carnesBajas ? repBajas : g == carnesMedias ? repMedias : DistribuidorService.Distribuir(g, _catalogo, rng));
+        AsegurarBaseDesayuno(reparto);
         var usados = new Dictionary<string, int>(); // cuántas veces se usó cada alimento en el día
         var usadasFamilias = new Dictionary<string, int>(); // cuántas veces se usó cada fuente proteica (pollo, res, pescado, huevo...)
         var advertencias = new List<string>();
@@ -39,7 +52,8 @@ public sealed class MenuService
             var listaGrupos = gruposComida.ToList();
             // una sola fuente proteica por comida (no pollo + res en el mismo plato)
             var familiaProteica = ElegirFamiliaProteica(
-                listaGrupos.Where(g => g.Grupo == GrupoCarnes).ToList(), m, usadasFamilias, rng);
+                listaGrupos.Where(g => g.Grupo == GrupoCarnes).ToList(), m, usadasFamilias, rng,
+                listaGrupos.Any(g => g.Grupo == "Lácteos"));
 
             foreach (var g in listaGrupos)
             {
@@ -52,17 +66,10 @@ public sealed class MenuService
                 }
                 if (pool.Count == 0) continue;
 
-                // cuántas porciones por alimento antes de agregar otro alimento al plato
-                var porAlimento = g.Grupo switch
-                {
-                    "Vegetales" => 1.0,                 // varias verduras, una por porción
-                    "Cereales" => 2.5,
-                    "Leguminosas" or "Lácteos" => 2.0,
-                    GrupoCarnes => 3.0,                 // una sola carne por subgrupo
-                    _ => 1.5
-                };
+                // Un solo alimento por subgrupo y comida: si corresponden 2 intercambios, se muestra 1 alimento con la cantidad total.
+                // Única excepción: 2 o más intercambios de verduras pueden ser 2 verduras (ensalada).
                 var unidades = (int)Math.Round(porciones / 0.5);
-                var n = Math.Min(Math.Min(pool.Count, unidades), Math.Max(1, (int)Math.Ceiling(porciones / porAlimento)));
+                var n = CuantosAlimentos(g, porciones, pool.Count);
                 var elegidos = new List<Alimento>();
                 for (var k = 0; k < n; k++)
                 {
@@ -72,6 +79,7 @@ public sealed class MenuService
                     usados[siguiente.Id] = usados.GetValueOrDefault(siguiente.Id) + 1;
                 }
 
+                if (elegidos.Count == 0) continue;
                 // reparte las porciones entre los alimentos elegidos (los primeros reciben la unidad extra)
                 var baseU = unidades / elegidos.Count;
                 var extra = unidades % elegidos.Count;
@@ -92,8 +100,9 @@ public sealed class MenuService
             var aporte = new MacrosDto(
                 Math.Round(items.Sum(i => i.g.Kcal * i.porc), 1), Math.Round(items.Sum(i => i.g.Cho * i.porc), 1),
                 Math.Round(items.Sum(i => i.g.Prot * i.porc), 1), Math.Round(items.Sum(i => i.g.Grasa * i.porc), 1));
+            var indicacion = IndicacionService.Crear(CatalogoService.ComidaIds[m], items.Select(i => i.a));
             comidas.Add(new ComidaDto(CatalogoService.ComidaIds[m], CatalogoService.ComidaNombres[m],
-                CatalogoService.ComidaHorarios[m], dtoItems, aporte));
+                CatalogoService.ComidaHorarios[m], dtoItems, aporte, indicacion));
         }
 
         if (!enRango) advertencias.Add("No se logró dejar los 4 nutrientes entre 90 % y 110 % con las reglas actuales.");
@@ -112,14 +121,41 @@ public sealed class MenuService
                 Math.Round(req.GrasaG, 1), req.KcalPorKg, req.ProtPct, req.ChoPct, req.GrasaPct),
             grupos.Select(g => new GrupoPorcionDto(g.Grupo, g.Subgrupo, g.Porciones, reparto[g])).ToList(),
             new AdecuacionDto(Math.Round(ad[0], 1), Math.Round(ad[1], 1), Math.Round(ad[2], 1), Math.Round(ad[3], 1), enRango),
-            comidas, total, advertencias);
+            comidas, total, advertencias, GuiaPorciones);
+    }
+
+    /// <summary>
+    /// El desayuno siempre lleva una base (un lácteo o un cereal). Si el sorteo no la puso, se trae al desayuno el lácteo
+    /// semidescremado (o, si no, el cereal medio bajo en grasa) completo; los totales del día no cambian.
+    /// </summary>
+    void AsegurarBaseDesayuno(Dictionary<GrupoIntercambio, double[]> reparto)
+    {
+        if (reparto.Any(kv => (kv.Key.Grupo == "Lácteos" || kv.Key.Grupo == "Cereales") && kv.Value[0] > 0)) return;
+        foreach (var (grupo, subgrupo) in new[] { ("Lácteos", "Semidescremados"), ("Cereales", "Medios en CHO y bajos en grasas") })
+        {
+            var g = reparto.Keys.FirstOrDefault(x => x.Grupo == grupo && x.Subgrupo == subgrupo);
+            if (g == null || g.Porciones <= 0) continue;
+            if (_catalogo.Opciones(g.Grupo, g.Subgrupo, CatalogoService.ComidaIds[0]).Count == 0) continue;
+            var r = reparto[g];
+            r[0] = g.Porciones;
+            for (var m = 1; m < 5; m++) r[m] = 0;
+            return;
+        }
+    }
+
+    /// <summary>Cuántos alimentos distintos se muestran para un subgrupo en una comida (1, salvo 2 verduras cuando hay 2 o más intercambios).</summary>
+    static int CuantosAlimentos(GrupoIntercambio g, double porciones, int disponibles)
+    {
+        var unidades = (int)Math.Round(porciones / 0.5);
+        var deseados = g.Grupo == "Vegetales" && porciones >= 2 ? 2 : 1;
+        return Math.Max(1, Math.Min(deseados, Math.Min(disponibles, unidades)));
     }
 
     /// <summary>
     /// Elige la fuente proteica de la comida (pollo, res, pescado, huevo...) entre las que tienen opciones
     /// en TODOS los subgrupos de carnes que tocan en esa comida; prefiere las menos usadas en el día.
     /// </summary>
-    string? ElegirFamiliaProteica(List<GrupoIntercambio> gruposCarne, int comida, Dictionary<string, int> usadas, Random rng)
+    string? ElegirFamiliaProteica(List<GrupoIntercambio> gruposCarne, int comida, Dictionary<string, int> usadas, Random rng, bool hayLacteo)
     {
         if (gruposCarne.Count == 0) return null;
         HashSet<string>? comunes = null;
@@ -132,6 +168,16 @@ public sealed class MenuService
             else { var cruce = comunes.Intersect(familias).ToHashSet(); if (cruce.Count > 0) comunes = cruce; }
         }
         if (comunes == null || comunes.Count == 0) return null;
+        // si la comida lleva dos cortes (bajo y medio en grasa), se prefiere pollo o res antes que dos pescados o huevo entero + claras
+        if (gruposCarne.Count > 1)
+            foreach (var f in new[] { "pescado", "huevo" })
+                if (comunes.Count > 1) comunes.Remove(f);
+        // si la comida lleva leche o yogur, se prefiere una fuente que no sea pescado ni mariscos
+        if (hayLacteo)
+            foreach (var f in new[] { "pescado", "sardinas", "sardina", "camaron" })
+                if (comunes.Count > 1) comunes.Remove(f);
+        // el desayuno lleva huevo (entero o clara), no pescado
+        if (comida == 0 && comunes.Count > 1) comunes.Remove("pescado");
         var elegida = comunes.OrderBy(f => usadas.GetValueOrDefault(f)).ThenBy(_ => rng.Next()).First();
         usadas[elegida] = usadas.GetValueOrDefault(elegida) + 1;
         return elegida;
