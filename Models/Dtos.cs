@@ -32,3 +32,6 @@ public sealed record PlanResponse(
     MacrosDto TotalDia,
     List<string> Advertencias,
     string GuiaPorciones = "");
+
+/// <summary>Para recalcular el texto de combinación de una comida cuando el usuario cambia un alimento por otro.</summary>
+public sealed record IndicacionRequest(string? Comida, List<string>? Alimentos);

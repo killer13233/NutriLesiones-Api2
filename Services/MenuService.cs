@@ -36,7 +36,7 @@ public sealed class MenuService
 
         // El sorteo de comidas se repite (hasta 40 veces) si deja una comida muy cargada o muy liviana en kcal.
         var reparto = new Dictionary<GrupoIntercambio, double[]>();
-        var mejorDesbalance = double.MaxValue;
+        var mejorPuntaje = double.MaxValue;
         for (var intento = 0; intento < 40; intento++)
         {
             var (repBajas, repMedias) = DistribuidorService.DistribuirCarnes(carnesBajas, carnesMedias, _catalogo, rng);
@@ -44,8 +44,10 @@ public sealed class MenuService
                 g == carnesBajas ? repBajas : g == carnesMedias ? repMedias : DistribuidorService.Distribuir(g, _catalogo, rng));
             AsegurarBaseDesayuno(candidato);
             var desbalance = DesbalanceKcal(grupos, candidato);
-            if (desbalance < mejorDesbalance) { mejorDesbalance = desbalance; reparto = candidato; }
-            if (desbalance <= DesbalanceMaximo) break;
+            var cerealesJuntos = ComidasConDosCereales(grupos, candidato); // p. ej. avena + tortilla en la misma comida
+            var puntaje = desbalance + 0.25 * cerealesJuntos;
+            if (puntaje < mejorPuntaje) { mejorPuntaje = puntaje; reparto = candidato; }
+            if (desbalance <= DesbalanceMaximo && cerealesJuntos == 0) break;
         }
         var usados = new Dictionary<string, int>(); // cuántas veces se usó cada alimento en el día
         var usadasFamilias = new Dictionary<string, int>(); // cuántas veces se usó cada fuente proteica (pollo, res, pescado, huevo...)
@@ -81,6 +83,15 @@ public sealed class MenuService
                 {
                     var sinMermelada = pool.Where(a => !Texto.Norm(a.Nombre).Contains("mermelada")).ToList();
                     if (sinMermelada.Count > 0) pool = sinMermelada;
+                }
+
+                // avena, morocho y máchica se preparan con leche o yogur: solo van en comidas que llevan un lácteo
+                if (g.Grupo == "Cereales" && !listaGrupos.Any(gr => gr.Grupo == "Lácteos"))
+                {
+                    var sinCalientes = pool.Where(al =>
+                        !(Texto.Norm(al.Nombre).StartsWith("avena") || Texto.Norm(al.Nombre).StartsWith("morocho")
+                          || Texto.Norm(al.Nombre).StartsWith("harina de cebada"))).ToList();
+                    if (sinCalientes.Count > 0) pool = sinCalientes;
                 }
 
                 // Un solo alimento por subgrupo y comida: si corresponden 2 intercambios, se muestra 1 alimento con la cantidad total.
@@ -175,6 +186,15 @@ public sealed class MenuService
         var peor = 0.0;
         for (var m = 0; m < 5; m++) peor = Math.Max(peor, Math.Abs(kcal[m] / total - KcalIdealPorComida[m]));
         return peor;
+    }
+
+    /// <summary>Cuenta las comidas que quedaron con dos subgrupos de cereales a la vez.</summary>
+    static int ComidasConDosCereales(List<GrupoIntercambio> grupos, Dictionary<GrupoIntercambio, double[]> reparto)
+    {
+        var juntos = 0;
+        for (var m = 0; m < 5; m++)
+            if (grupos.Count(g => g.Grupo == "Cereales" && reparto[g][m] > 0) >= 2) juntos++;
+        return juntos;
     }
 
     /// <summary>Cuántos alimentos distintos se muestran para un subgrupo en una comida (1, salvo 2 verduras cuando hay 2 o más intercambios).</summary>

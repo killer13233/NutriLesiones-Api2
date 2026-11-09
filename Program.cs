@@ -67,4 +67,17 @@ app.MapPost("/api/plan", (PlanRequest req, MenuService menu) =>
     return Results.Ok(menu.CrearPlan(req.Peso, fase, req.Leccion, semilla));
 });
 
+// Recalcula el texto de cómo combinar los alimentos de UNA comida (se usa después de un intercambio en el frontend).
+// Cuerpo: { "comida": "Desayuno|MM|Almuerzo|MT|Cena", "alimentos": ["id-1", "id-2", ...] } -> { "indicacion": "..." | null }
+app.MapPost("/api/indicacion", (IndicacionRequest req, CatalogoService c) =>
+{
+    var comida = CatalogoService.ComidaIds.FirstOrDefault(x => string.Equals(x, req.Comida, StringComparison.OrdinalIgnoreCase));
+    if (comida == null)
+        return Results.BadRequest(new { error = "Comida no válida. Usa: Desayuno, MM, Almuerzo, MT o Cena." });
+    var alimentos = (req.Alimentos ?? new List<string>()).Take(30).Distinct()
+        .Select(id => c.Alimentos.FirstOrDefault(a => a.Id == id))
+        .Where(a => a != null).Select(a => a!).ToList();
+    return Results.Ok(new { indicacion = IndicacionService.Crear(comida, alimentos) });
+});
+
 app.Run();

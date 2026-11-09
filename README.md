@@ -120,6 +120,7 @@ Casi todas las fotos salen del libro de la USFQ. Para poner o cambiar una foto: 
 
 ## Cambios de noviembre (sugerencias de Belén)
 - `comidas[].indicacion`: texto breve con cómo combinar los alimentos de cada comida en un plato (`IndicacionService.cs`).
+- `POST /api/indicacion` { comida, alimentos:[ids] } -> { indicacion }: recalcula el texto de una comida después de un intercambio en el frontend.
 - `guiaPorciones`: texto para "Cómo funciona" / inicio de "Comidas del día" (constante `MenuService.GuiaPorciones`).
 - Un solo alimento por subgrupo y comida (2 intercambios = 1 alimento con cantidad 2). Excepción: 2 o más intercambios de verduras pueden mostrarse como 2 verduras.
 - Cada comida lleva una sola fuente de carne (ya no sale trucha + salmón). Los totales por subgrupo no cambian.
@@ -129,3 +130,4 @@ Casi todas las fotos salen del libro de la USFQ. Para poner o cambiar una foto: 
 - `POST /api/plan` acepta `edad` opcional; si viene, debe estar entre 12 y 19 (no cambia el cálculo).
 - `docs/ejemplo-respuesta.json` quedó del formato anterior: regenerarlo con una llamada a /api/plan.
 - El sorteo de comidas se repite (hasta 40 veces) si una comida queda a más de 8 puntos de su parte ideal de las kcal del día (20/14/31/14/21 %). La mermelada solo sale en comidas con pan.
+- Avena, morocho y máchica solo salen en comidas con lácteo, y el sorteo evita (cuando se puede) dos subgrupos de cereales en la misma comida.

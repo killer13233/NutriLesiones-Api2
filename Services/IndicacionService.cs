@@ -43,7 +43,7 @@ public static class IndicacionService
             // las calabazas (sambo, zapallo, zuquini) no van en ensalada: se sirven cocidas
             var calabaza = vegs.Any(v => v is "sambo" or "zapallo" or "zuquini");
             var f = calabaza
-                ? $"Puedes preparar {Texto.Unir(vegs)} al vapor o salteadas{aderezo}"
+                ? $"Puedes preparar {Texto.Unir(vegs)} al vapor o salteados{aderezo}"
                 : $"Puedes combinar {Texto.Unir(vegs)} en una ensalada{aderezo}";
             if (acomp.Count > 0) f += calabaza ? $", junto con {Texto.Unir(acomp)}" : $", acompañada de {Texto.Unir(acomp)}";
             frases.Add(f + ".");
@@ -53,8 +53,8 @@ public static class IndicacionService
         else if (grasas.Count > 0)
             frases.Add($"Puedes usar {Texto.Unir(grasas)} para aderezar tu comida.");
 
-        if (frutas.Count > 0) frases.Add(frases.Count == 0 ? $"Puedes comer {Texto.Unir(frutas)}." : $"De postre: {Texto.Unir(frutas)}.");
-        if (lacteos.Count > 0) frases.Add($"Para tomar: {Texto.Unir(lacteos)}.");
+        if (frutas.Count > 0) frases.Add(frases.Count == 0 ? $"Puedes comer {Texto.Unir(frutas)}." : $"De postre, {Texto.Unir(frutas)}.");
+        if (lacteos.Count > 0) frases.Add($"Para tomar, {Texto.Unir(lacteos)}.");
         return frases.Count == 0 ? null : string.Join(" ", frases);
     }
 
@@ -62,7 +62,7 @@ public static class IndicacionService
         List<string> legum, List<string> vegs, List<string> grasas, List<string> azucares)
     {
         var frases = new List<string>();
-        string? baseFrase;
+        string baseFrase;
 
         if (cereales.Count > 0 && lacteos.Count > 0)
         {
@@ -71,36 +71,24 @@ public static class IndicacionService
             {
                 // avena, quinua, máchica o morocho se preparan con el lácteo; otros cereales van como acompañamiento
                 baseFrase = $"Puedes preparar {Texto.Unir(calientes)} con {Texto.Unir(lacteos)}";
-                if (frutas.Count > 0)
-                {
-                    baseFrase += $" y añadir {Texto.Unir(frutas)}";
-                    frutas = new List<string>();
-                }
                 cereales = cereales.Except(calientes).ToList();
             }
             else
             {
-                baseFrase = $"Puedes comer {Texto.Unir(cereales)} y tomar {Texto.Unir(lacteos)}";
-                if (frutas.Count > 0)
-                {
-                    frases.Add($"Añade {Texto.Unir(frutas)}.");
-                    frutas = new List<string>();
-                }
+                baseFrase = $"Puedes tomar {Texto.Unir(lacteos)} con {Texto.Unir(cereales)}";
                 cereales = new List<string>();
             }
             lacteos = new List<string>();
         }
         else if (cereales.Count > 0)
         {
-            baseFrase = $"Puedes comer {Texto.Unir(cereales)}" + (frutas.Count > 0 ? $" junto con {Texto.Unir(frutas)}" : "");
+            baseFrase = $"Puedes comer {Texto.Unir(cereales)}";
             cereales = new List<string>();
-            frutas = new List<string>();
         }
         else if (lacteos.Count > 0)
         {
-            baseFrase = $"Puedes tomar {Texto.Unir(lacteos)}" + (frutas.Count > 0 ? $" y añadir {Texto.Unir(frutas)}" : "");
+            baseFrase = $"Puedes tomar {Texto.Unir(lacteos)}";
             lacteos = new List<string>();
-            frutas = new List<string>();
         }
         else if (frutas.Count > 0)
         {
@@ -115,12 +103,15 @@ public static class IndicacionService
             principal.Clear();
         }
 
-        frases.Insert(0, baseFrase + ".");
+        // la fruta se suma a la base: "Puedes preparar avena con leche, añadiendo banano."
+        if (frutas.Count > 0) baseFrase += $", añadiendo {Texto.Unir(frutas)}";
+        frases.Add(baseFrase + ".");
+
         var acomp = cereales.Concat(proteinas).Concat(legum).Concat(vegs).ToList();
-        if (acomp.Count > 0) frases.Add($"Acompáñalo con {Texto.Unir(acomp)}.");
-        if (grasas.Count > 0) frases.Add($"Agrega {Texto.Unir(grasas)}.");
+        if (acomp.Count > 0) frases.Add($"Acompaña con {Texto.Unir(acomp)}.");
+        if (grasas.Count > 0) frases.Add($"Completa con {Texto.Unir(grasas)}.");
         if (azucares.Count > 0)
-            frases.Add(azucares.Contains("mermelada") ? "Si deseas, agrega mermelada." : $"Si deseas, endulza con {Texto.Unir(azucares)}.");
+            frases.Add(azucares.Contains("mermelada") ? "Si deseas, unta mermelada en el pan." : $"Si deseas, endulza con {Texto.Unir(azucares)}.");
         return string.Join(" ", frases);
     }
 }
